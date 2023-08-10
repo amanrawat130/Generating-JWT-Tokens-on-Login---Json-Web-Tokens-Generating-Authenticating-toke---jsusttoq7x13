@@ -84,9 +84,36 @@ const login = async (req, res) => {
         });
     }
 
-    try {
-        // Write your code here.
-    } catch (err) {
+     try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(401).json({
+        message: 'Invalid email or password',
+        status: 'Error',
+        error: 'Invalid Credentials',
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        message: 'Invalid email or password',
+        status: 'Error',
+        error: 'Invalid Credentials',
+      });
+    }
+
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
+      expiresIn: '1h', // Token expires in 1 hour
+    });
+
+    res.status(200).json({
+      token,
+      status: 'Success',
+    });
+  } catch (err) {
         console.error(err);
         res.status(500).json({
             message: 'Something went wrong',
@@ -126,9 +153,13 @@ Output:
 
 const decodeToken = (req, res) => {
     const { token } = req.body;
-    try {
-        //Write your code here
-    } catch (err) {
+   try {
+    const decodedToken = jwt.verify(token, JWT_SECRET);
+    res.status(200).json({
+      payload: decodedToken,
+      status: 'Success',
+    });
+  }  catch (err) {
         console.error(err);
         res.status(401).json({ message: 'Invalid token' });
     }
